@@ -30,7 +30,7 @@ class Net(nn.Module):
         x = self.fc2(x)
         return nn.LogSoftmax(dim=1)(x)
 
-# Image preprocessing for MNIST digits
+# Transforms for MNIST-like digits
 _transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
     transforms.Resize((28, 28)),
@@ -44,6 +44,8 @@ def transform_pil_image(pil_image: Image.Image):
     tensor = _transform(pil_image)  # shape [1,28,28]
     tensor = tensor.unsqueeze(0)     # shape [1,1,28,28]
     return tensor
+
+
 def load_model(path: str, device=None):
     """
     Load the trained Net model from path (PyTorch >=2.6 fix).
@@ -51,15 +53,16 @@ def load_model(path: str, device=None):
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # ✅ Explicitly allow your Net class as safe
+    # ✅ Explicitly allow Net class to be unpickled
     torch.serialization.add_safe_globals([Net])
 
-    # ✅ Tell torch.load to ignore weights_only restriction
+    # ✅ Force weights_only=False so old checkpoints still work
     state = torch.load(path, map_location=device, weights_only=False)
 
     model = Net().to(device)
     model.load_state_dict(state)
     model.eval()
+    print("✅ Model loaded successfully")
     return model, device
 
 
