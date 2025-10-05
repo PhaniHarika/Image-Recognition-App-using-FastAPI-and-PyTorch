@@ -48,4 +48,8 @@ for epoch in range(1):
         loss.backward()
         optimizer.step()
         if batch_idx % 100 == 0:
-            pri
+            print(f"Train Epoch: {epoch} [{batch_idx*len(data)}/{len(train_loader.dataset)}] Loss: {loss.item()}")
+
+# ✅ Save weights only
+torch.save(model.state_dict(), "mnist_cnn.pth")
+print("✅ Model weights saved as mnist_cnn.pth")
