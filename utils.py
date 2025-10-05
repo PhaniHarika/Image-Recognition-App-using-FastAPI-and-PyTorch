@@ -30,7 +30,7 @@ class Net(nn.Module):
         x = self.fc2(x)
         return nn.LogSoftmax(dim=1)(x)
 
-# Transforms for MNIST-like digits
+# Image preprocessing for MNIST digits
 _transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
     transforms.Resize((28, 28)),
@@ -48,20 +48,20 @@ def transform_pil_image(pil_image: Image.Image):
 def load_model(path: str, device=None):
     """
     Robust model loader that handles:
-      - state_dict (recommended)
+      - state_dict (recommended way to save)
       - checkpoint dict with 'state_dict'
-      - full model object (nn.Module)
+      - full model object (legacy torch.save(model, ...))
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     try:
         state = torch.load(path, map_location=device)
-    except Exception as e1:
-        # fallback in case PyTorch 2.6 blocks it
+    except Exception:
+        # fallback if PyTorch 2.6 blocks it
         state = torch.load(path, map_location=device, weights_only=False)
 
-    # Case 1: file contains a full model
+    # Case 1: file contains a full model object
     if isinstance(state, nn.Module):
         state.to(device)
         state.eval()
@@ -85,10 +85,9 @@ def load_model(path: str, device=None):
         return model, device
 
     raise RuntimeError(
-        f"❌ Could not load model from {path}. Ensure you saved with "
-        "`torch.save(model.state_dict(), path)`."
+        f"❌ Could not load model from {path}. Please save it with:\n"
+        "   torch.save(model.state_dict(), 'mnist_cnn.pth')"
     )
-
 
 def predict_from_pil(pil_image: Image.Image, model, device):
     """
