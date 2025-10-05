@@ -52,4 +52,4 @@ for epoch in range(1):
 
 # ✅ Save weights only
 torch.save(model.state_dict(), "mnist_cnn.pth")
-print("✅ Model weights saved as mnist_cnn.pth")
+print("✅ Model state_dict saved as mnist_cnn.pth")
