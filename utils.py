@@ -5,25 +5,32 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 
-# SimpleCNN must match the model you trained (same architecture & names)
-class SimpleCNN(nn.Module):
+# Must match Net from train_model.py
+class Net(nn.Module):
     def __init__(self):
-        super(SimpleCNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1)
-        self.fc1 = nn.Linear(64 * 7 * 7, 128)
-        self.fc2 = nn.Linear(128, 10)  # 10 digits
+        super(Net, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, 1)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1)
+        self.dropout1 = nn.Dropout(0.25)
+        self.dropout2 = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(9216, 128)
+        self.fc2 = nn.Linear(128, 10)
 
     def forward(self, x):
-        x = self.pool(torch.relu(self.conv1(x)))
-        x = self.pool(torch.relu(self.conv2(x)))
-        x = x.view(-1, 64 * 7 * 7)
-        x = torch.relu(self.fc1(x))
+        x = self.conv1(x)
+        x = nn.ReLU()(x)
+        x = self.conv2(x)
+        x = nn.ReLU()(x)
+        x = nn.MaxPool2d(2)(x)
+        x = self.dropout1(x)
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = nn.ReLU()(x)
+        x = self.dropout2(x)
         x = self.fc2(x)
-        return x
+        return nn.LogSoftmax(dim=1)(x)
 
-# transforms: convert uploaded image to 1x28x28 tensor (0..1)
+# Transforms for MNIST-like digits
 _transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
     transforms.Resize((28, 28)),
@@ -37,20 +44,16 @@ def transform_pil_image(pil_image: Image.Image):
     tensor = _transform(pil_image)  # shape [1,28,28]
     tensor = tensor.unsqueeze(0)     # shape [1,1,28,28]
     return tensor
-    
+
 def load_model(path: str, device=None):
     """
-    Load the SimpleCNN model from path. Returns model on device.
+    Load the trained Net model from path.
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = SimpleCNN().to(device)
+    model = Net().to(device)
     state = torch.load(path, map_location=device)
-    # if saved with `model.state_dict()`, use load_state_dict
-    if isinstance(state, dict) and 'state_dict' in state:
-        model.load_state_dict(state['state_dict'])
-    else:
-        model.load_state_dict(state)
+    model.load_state_dict(state)   # ✅ matches weights saved in train_model.py
     model.eval()
     return model, device
 
