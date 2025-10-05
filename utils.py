@@ -47,15 +47,48 @@ def transform_pil_image(pil_image: Image.Image):
 
 def load_model(path: str, device=None):
     """
-    Load the trained Net model from path.
+    Robust model loader that handles:
+      - state_dict (recommended)
+      - checkpoint dict with 'state_dict'
+      - full model object (nn.Module)
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Net().to(device)
-    state = torch.load(path, map_location=device)
-    model.load_state_dict(state)   # ✅ matches weights saved in train_model.py
-    model.eval()
-    return model, device
+
+    try:
+        state = torch.load(path, map_location=device)
+    except Exception as e1:
+        # fallback in case PyTorch 2.6 blocks it
+        state = torch.load(path, map_location=device, weights_only=False)
+
+    # Case 1: file contains a full model
+    if isinstance(state, nn.Module):
+        state.to(device)
+        state.eval()
+        print("✅ Loaded full model object")
+        return state, device
+
+    # Case 2: checkpoint dict with 'state_dict'
+    if isinstance(state, dict) and 'state_dict' in state:
+        model = Net().to(device)
+        model.load_state_dict(state['state_dict'])
+        model.eval()
+        print("✅ Loaded model from checkpoint dict")
+        return model, device
+
+    # Case 3: direct state_dict
+    if isinstance(state, dict):
+        model = Net().to(device)
+        model.load_state_dict(state)
+        model.eval()
+        print("✅ Loaded model from state_dict")
+        return model, device
+
+    raise RuntimeError(
+        f"❌ Could not load model from {path}. Ensure you saved with "
+        "`torch.save(model.state_dict(), path)`."
+    )
+
 
 def predict_from_pil(pil_image: Image.Image, model, device):
     """
