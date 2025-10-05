@@ -44,50 +44,24 @@ def transform_pil_image(pil_image: Image.Image):
     tensor = _transform(pil_image)  # shape [1,28,28]
     tensor = tensor.unsqueeze(0)     # shape [1,1,28,28]
     return tensor
-
 def load_model(path: str, device=None):
     """
-    Robust model loader that handles:
-      - state_dict (recommended way to save)
-      - checkpoint dict with 'state_dict'
-      - full model object (legacy torch.save(model, ...))
+    Load the trained Net model from path (PyTorch >=2.6 fix).
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    try:
-        state = torch.load(path, map_location=device)
-    except Exception:
-        # fallback if PyTorch 2.6 blocks it
-        state = torch.load(path, map_location=device, weights_only=False)
+    # ✅ Explicitly allow your Net class as safe
+    torch.serialization.add_safe_globals([Net])
 
-    # Case 1: file contains a full model object
-    if isinstance(state, nn.Module):
-        state.to(device)
-        state.eval()
-        print("✅ Loaded full model object")
-        return state, device
+    # ✅ Tell torch.load to ignore weights_only restriction
+    state = torch.load(path, map_location=device, weights_only=False)
 
-    # Case 2: checkpoint dict with 'state_dict'
-    if isinstance(state, dict) and 'state_dict' in state:
-        model = Net().to(device)
-        model.load_state_dict(state['state_dict'])
-        model.eval()
-        print("✅ Loaded model from checkpoint dict")
-        return model, device
+    model = Net().to(device)
+    model.load_state_dict(state)
+    model.eval()
+    return model, device
 
-    # Case 3: direct state_dict
-    if isinstance(state, dict):
-        model = Net().to(device)
-        model.load_state_dict(state)
-        model.eval()
-        print("✅ Loaded model from state_dict")
-        return model, device
-
-    raise RuntimeError(
-        f"❌ Could not load model from {path}. Please save it with:\n"
-        "   torch.save(model.state_dict(), 'mnist_cnn.pth')"
-    )
 
 def predict_from_pil(pil_image: Image.Image, model, device):
     """
