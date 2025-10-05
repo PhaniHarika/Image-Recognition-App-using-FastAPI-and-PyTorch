@@ -1,5 +1,4 @@
 # MNIST Digit Classification API (PyTorch + FastAPI)
-
 This project demonstrates how to deploy a custom-trained PyTorch model using FastAPI.
 
 ## 🔹 Model
