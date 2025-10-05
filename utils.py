@@ -37,7 +37,7 @@ def transform_pil_image(pil_image: Image.Image):
     tensor = _transform(pil_image)  # shape [1,28,28]
     tensor = tensor.unsqueeze(0)     # shape [1,1,28,28]
     return tensor
-
+    
 def load_model(path: str, device=None):
     """
     Load the SimpleCNN model from path. Returns model on device.
