@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 
-# Define the same model architecture used in training
+# Define the same model used for training
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -17,77 +17,57 @@ class Net(nn.Module):
         self.fc2 = nn.Linear(128, 10)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = nn.ReLU()(x)
-        x = self.conv2(x)
-        x = nn.ReLU()(x)
-        x = nn.MaxPool2d(2)(x)
+        x = torch.relu(self.conv1(x))
+        x = torch.relu(self.conv2(x))
+        x = torch.max_pool2d(x, 2)
         x = self.dropout1(x)
         x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = nn.ReLU()(x)
+        x = torch.relu(self.fc1(x))
         x = self.dropout2(x)
         x = self.fc2(x)
-        return nn.LogSoftmax(dim=1)(x)
+        return torch.log_softmax(x, dim=1)
 
-# Transform for uploaded images
+# Transform the image before prediction
 _transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
     transforms.Resize((28, 28)),
-    transforms.ToTensor(),  # scales pixel values to [0,1]
+    transforms.ToTensor(),
 ])
 
 def transform_pil_image(pil_image: Image.Image):
-    """
-    Convert PIL image to a (1,1,28,28) tensor for inference.
-    """
     tensor = _transform(pil_image)
-    tensor = tensor.unsqueeze(0)
-    return tensor
+    return tensor.unsqueeze(0)
 
 def load_model(path: str, device=None):
     """
-    Safe model loader compatible with PyTorch 2.6+.
+    Robust loader for PyTorch 2.6+, allowing safe loading of old checkpoints.
     """
     import torch.serialization
-    # ✅ Allowlist the Net class for safe deserialization
-    torch.serialization.add_safe_globals([Net])
+    from torch.serialization import add_safe_globals
+
+    # ✅ Allow PyTorch to trust this Net class
+    add_safe_globals([Net])
 
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     try:
-        # Try loading safely first
-        state = torch.load(path, map_location=device)
-    except Exception as e:
-        print("⚠️ Safe load failed, retrying with weights_only=False:", e)
+        # Force old-style loading (fixes the warning)
         state = torch.load(path, map_location=device, weights_only=False)
+    except Exception as e:
+        print("❌ Model load failed:", e)
+        raise
 
-    # Case 1: full model object
-    if isinstance(state, nn.Module):
-        model = state.to(device)
-        print("✅ Loaded full model object")
-
-    # Case 2: checkpoint dictionary
-    elif isinstance(state, dict) and "state_dict" in state:
-        model = Net().to(device)
+    model = Net().to(device)
+    if isinstance(state, dict) and "state_dict" in state:
         model.load_state_dict(state["state_dict"])
-        print("✅ Loaded model from checkpoint dict")
-
-    # Case 3: plain state_dict
     else:
-        model = Net().to(device)
         model.load_state_dict(state)
-        print("✅ Loaded model from state_dict")
-
     model.eval()
+    print("✅ Model loaded successfully!")
     return model, device
 
 def predict_from_pil(pil_image: Image.Image, model, device):
-    """
-    Make prediction from PIL image using trained model.
-    Returns (predicted_class:int, confidence:float)
-    """
     tensor = transform_pil_image(pil_image).to(device)
     with torch.no_grad():
         outputs = model(tensor)
