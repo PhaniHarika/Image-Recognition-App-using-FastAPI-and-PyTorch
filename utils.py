@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 
-# Must match Net from train_model.py
+# Define the same model architecture used in training
 class Net(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
@@ -30,49 +30,67 @@ class Net(nn.Module):
         x = self.fc2(x)
         return nn.LogSoftmax(dim=1)(x)
 
-# Transforms for MNIST-like digits
+# Transform for uploaded images
 _transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
     transforms.Resize((28, 28)),
-    transforms.ToTensor(),  # scales to [0,1]
+    transforms.ToTensor(),  # scales pixel values to [0,1]
 ])
 
 def transform_pil_image(pil_image: Image.Image):
     """
-    Convert a PIL image to a batch tensor shape (1,1,28,28).
+    Convert PIL image to a (1,1,28,28) tensor for inference.
     """
-    tensor = _transform(pil_image)  # shape [1,28,28]
-    tensor = tensor.unsqueeze(0)     # shape [1,1,28,28]
+    tensor = _transform(pil_image)
+    tensor = tensor.unsqueeze(0)
     return tensor
-
 
 def load_model(path: str, device=None):
     """
-    Load the trained Net model from path (PyTorch >=2.6 fix).
+    Safe model loader compatible with PyTorch 2.6+.
     """
+    import torch.serialization
+    # ✅ Allowlist the Net class for safe deserialization
+    torch.serialization.add_safe_globals([Net])
+
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # ✅ Explicitly allow Net class to be unpickled
-    torch.serialization.add_safe_globals([Net])
+    try:
+        # Try loading safely first
+        state = torch.load(path, map_location=device)
+    except Exception as e:
+        print("⚠️ Safe load failed, retrying with weights_only=False:", e)
+        state = torch.load(path, map_location=device, weights_only=False)
 
-    # ✅ Force weights_only=False so old checkpoints still work
-    state = torch.load(path, map_location=device, weights_only=False)
+    # Case 1: full model object
+    if isinstance(state, nn.Module):
+        model = state.to(device)
+        print("✅ Loaded full model object")
 
-    model = Net().to(device)
-    model.load_state_dict(state)
+    # Case 2: checkpoint dictionary
+    elif isinstance(state, dict) and "state_dict" in state:
+        model = Net().to(device)
+        model.load_state_dict(state["state_dict"])
+        print("✅ Loaded model from checkpoint dict")
+
+    # Case 3: plain state_dict
+    else:
+        model = Net().to(device)
+        model.load_state_dict(state)
+        print("✅ Loaded model from state_dict")
+
     model.eval()
-    print("✅ Model loaded successfully")
     return model, device
-
 
 def predict_from_pil(pil_image: Image.Image, model, device):
     """
+    Make prediction from PIL image using trained model.
     Returns (predicted_class:int, confidence:float)
     """
     tensor = transform_pil_image(pil_image).to(device)
     with torch.no_grad():
-        outputs = model(tensor)  # shape [1,10]
+        outputs = model(tensor)
         probs = torch.softmax(outputs, dim=1)
         conf, pred = torch.max(probs, dim=1)
         return int(pred.item()), float(conf.item())
