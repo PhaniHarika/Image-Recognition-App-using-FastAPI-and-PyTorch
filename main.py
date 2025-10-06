@@ -1,49 +1,55 @@
-# main.py
-from fastapi import FastAPI, File, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from PIL import Image
 import io
-import os
 import utils
 
-app = FastAPI(title="MNIST Digit Inference API")
+app = FastAPI(title="MNIST Digit Recognition App")
 
-# CORS (optional)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Serve static and templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
 
 # Path to your saved model
 MODEL_PATH = "mnist_cnn_clean.pth"
 
-# load model at startup
+# Load model on startup
 try:
     model, device = utils.load_model(MODEL_PATH)
-    print(f"Loaded model from {MODEL_PATH} on device {device}")
+    print(f"✅ Loaded model from {MODEL_PATH} on device {device}")
 except Exception as e:
-    print("Failed to load model:", e)
+    print("❌ Failed to load model:", e)
     model, device = None, None
 
 
-@app.get("/")
-def read_root():
-    return {"status": "ok", "message": "MNIST prediction server. Use POST /predict"}
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+    """Renders the home page"""
+    return templates.TemplateResponse("index.html", {"request": request, "result": None})
 
 
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+@app.post("/", response_class=HTMLResponse)
+async def predict_image(request: Request, file: UploadFile = File(...)):
+    """Handles image upload + prediction"""
     if model is None:
-        raise HTTPException(status_code=503, detail="Model not loaded on server.")
+        raise HTTPException(status_code=503, detail="Model not loaded")
+
     try:
         contents = await file.read()
         pil_image = Image.open(io.BytesIO(contents)).convert("RGB")
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid image file.")
+        pred_class, confidence = utils.predict_from_pil(pil_image, model, device)
 
-    pred_class, confidence = utils.predict_from_pil(pil_image, model, device)
-    return JSONResponse(content={"prediction": pred_class, "confidence": round(confidence, 4)})
+        result = {
+            "filename": file.filename,
+            "prediction": pred_class,
+            "confidence": round(confidence * 100, 2),
+        }
+        return templates.TemplateResponse(
+            "index.html",
+            {"request": request, "result": result},
+        )
+    except Exception as e:
+        print("Prediction error:", e)
+        raise HTTPException(status_code=400, detail="Invalid image file")
