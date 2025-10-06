@@ -19,7 +19,7 @@ app.add_middleware(
 )
 
 # Path to your saved model
-MODEL_PATH = "mnist_cnn_fixed.pth"
+MODEL_PATH = "mnist_cnn_clean.pth"
 
 # load model at startup
 try:
