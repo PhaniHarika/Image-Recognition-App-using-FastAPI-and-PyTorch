@@ -1,10 +1,11 @@
-from fastapi import FastAPI, Request, File, UploadFile, HTTPException, Form
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
 from PIL import Image
 import io
 import utils
+
 
 app = FastAPI(title="MNIST Digit Recognition App")
 
