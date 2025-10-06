@@ -1,35 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>FastAPI + PyTorch App</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f9f9ff; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f9f9ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
         .card {
-            background: white; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            width: 400px; margin: 100px auto; padding: 20px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 30px 40px;
+            width: 400px;
+            text-align: center;
         }
-        h1 { color: #6a5acd; }
-        input[type=file] { margin: 20px 0; }
+        h1 {
+            color: #6a5acd;
+            margin-bottom: 5px;
+        }
+        p.subtitle {
+            color: #666;
+            margin-top: 0;
+        }
+        input[type=file] {
+            margin: 20px 0;
+            padding: 10px;
+        }
         button {
-            background: #6a5acd; color: white; border: none; padding: 10px 20px;
-            border-radius: 10px; cursor: pointer;
+            background: #6a5acd;
+            color: #fff;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: 0.3s;
         }
-        img { margin-top: 20px; width: 100px; border-radius: 10px; }
+        button:hover {
+            background: #5a4ac7;
+        }
+        img {
+            margin-top: 15px;
+            width: 120px;
+            border-radius: 10px;
+        }
+        footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+        footer span {
+            color: #ff69b4;
+        }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>FastAPI 🔥 PyTorch</h1>
-        <form method="post" enctype="multipart/form-data">
+        <p class="subtitle">An Image Recognition App</p>
+
+        <form method="post" enctype="multipart/form-data" action="/predict">
             <input type="file" name="file" accept="image/*" required>
             <button type="submit">Predict</button>
         </form>
 
         {% if result %}
+            <img src="data:image/png;base64,{{ result.image_data }}" alt="Uploaded image">
             <h3>Prediction: {{ result.prediction }}</h3>
             <p>Confidence: {{ result.confidence }}%</p>
-            <p><b>{{ result.filename }}</b></p>
         {% endif %}
+
+        <footer>
+            Made with <span>❤</span> by <b>Phani Harika</b>
+        </footer>
     </div>
 </body>
 </html>
