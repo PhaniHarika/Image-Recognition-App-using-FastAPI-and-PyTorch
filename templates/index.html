@@ -1,83 +1,47 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phani Harika | FastAPI + PyTorch App</title>
+    <title>Phani Harika | Image Recognition App 🔥</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            text-align: center;
-            background: linear-gradient(135deg, #f3f4ff, #e9e9ff);
-            margin: 0;
-            padding: 0;
-        }
+        body { font-family: sans-serif; text-align: center; background: #f9f9ff; }
         .card {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            width: 420px;
-            margin: 100px auto;
-            padding: 30px;
+            background: white; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            width: 400px; margin: 100px auto; padding: 20px;
         }
-        h1 {
-            color: #6a5acd;
-            margin-bottom: 10px;
-        }
-        p {
-            color: #555;
-            margin-top: 0;
-        }
-        input[type=file] {
-            margin: 20px 0;
-            border: 1px solid #ccc;
-            border-radius: 10px;
-            padding: 8px;
-        }
+        h1 { color: #6a5acd; }
+        input[type=file] { margin: 20px 0; }
         button {
-            background: #6a5acd;
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 15px;
+            background: #6a5acd; color: white; border: none; padding: 10px 20px;
+            border-radius: 10px; cursor: pointer;
         }
-        button:hover {
-            background: #5b4bc4;
-        }
-        img {
-            margin-top: 20px;
-            width: 100px;
-            border-radius: 10px;
-        }
-        .result {
-            margin-top: 20px;
-            background: #f8f8ff;
-            padding: 15px;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-        }
+        img { margin-top: 20px; width: 100px; border-radius: 10px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>FastAPI 🔥 PyTorch</h1>
-        <p>Created by <b>Phani Harika</b></p>
+        <h1>Phani Harika 🔢 Image Classifier</h1>
 
-        <form method="post" enctype="multipart/form-data" action="/">
-            <input type="file" name="file" accept="image/*" required>
+        <form method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept="image/*" required onchange="previewImage(event)">
+            <br>
+            <img id="preview" src="#" alt="Uploaded Image Preview" style="display:none;">
             <br>
             <button type="submit">Predict</button>
         </form>
 
         {% if result %}
-        <div class="result">
             <h3>Prediction: {{ result.prediction }}</h3>
             <p>Confidence: {{ result.confidence }}%</p>
-            <p><i>{{ result.filename }}</i></p>
-        </div>
+            <p><b>{{ result.filename }}</b></p>
         {% endif %}
     </div>
+
+    <script>
+        function previewImage(event) {
+            const preview = document.getElementById('preview');
+            preview.src = URL.createObjectURL(event.target.files[0]);
+            preview.style.display = 'block';
+        }
+    </script>
 </body>
 </html>
