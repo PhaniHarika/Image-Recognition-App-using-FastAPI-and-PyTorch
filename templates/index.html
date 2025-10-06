@@ -2,83 +2,82 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>FastAPI + PyTorch App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phani Harika | FastAPI + PyTorch App</title>
     <style>
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f9f9ff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #f3f4ff, #e9e9ff);
             margin: 0;
+            padding: 0;
         }
         .card {
             background: #fff;
             border-radius: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            padding: 30px 40px;
-            width: 400px;
-            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 420px;
+            margin: 100px auto;
+            padding: 30px;
         }
         h1 {
             color: #6a5acd;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
-        p.subtitle {
-            color: #666;
+        p {
+            color: #555;
             margin-top: 0;
         }
         input[type=file] {
             margin: 20px 0;
-            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            padding: 8px;
         }
         button {
             background: #6a5acd;
-            color: #fff;
+            color: white;
             border: none;
             padding: 10px 25px;
             border-radius: 10px;
             cursor: pointer;
-            transition: 0.3s;
+            font-size: 15px;
         }
         button:hover {
-            background: #5a4ac7;
+            background: #5b4bc4;
         }
         img {
-            margin-top: 15px;
-            width: 120px;
+            margin-top: 20px;
+            width: 100px;
             border-radius: 10px;
         }
-        footer {
+        .result {
             margin-top: 20px;
-            font-size: 14px;
-            color: #555;
-        }
-        footer span {
-            color: #ff69b4;
+            background: #f8f8ff;
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid #ddd;
         }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>FastAPI 🔥 PyTorch</h1>
-        <p class="subtitle">An Image Recognition App</p>
+        <p>Created by <b>Phani Harika</b></p>
 
-        <form method="post" enctype="multipart/form-data" action="/predict">
+        <form method="post" enctype="multipart/form-data" action="/">
             <input type="file" name="file" accept="image/*" required>
+            <br>
             <button type="submit">Predict</button>
         </form>
 
         {% if result %}
-            <img src="data:image/png;base64,{{ result.image_data }}" alt="Uploaded image">
+        <div class="result">
             <h3>Prediction: {{ result.prediction }}</h3>
             <p>Confidence: {{ result.confidence }}%</p>
+            <p><i>{{ result.filename }}</i></p>
+        </div>
         {% endif %}
-
-        <footer>
-            Made with <span>❤</span> by <b>Phani Harika</b>
-        </footer>
     </div>
 </body>
 </html>
