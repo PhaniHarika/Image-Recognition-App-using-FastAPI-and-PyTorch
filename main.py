@@ -27,8 +27,8 @@ except Exception as e:
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    """Renders the home page"""
-    return templates.TemplateResponse("index.html", {"request": request, "result": None})
+    return templates.TemplateResponse("index.html", {"request": request})
+
 
 
 @app.post("/", response_class=HTMLResponse)
